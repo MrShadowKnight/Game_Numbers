@@ -23,14 +23,17 @@ def r_sub_menu_numbers():
 def random_numbers(message, random_number):
     cid = message.chat.id
     try:
-        if message.text == "Стоп":
+        if message.text == "Стоп" or message.text.lower == "Стоп":
             with open("note.json", "r") as file:
                 note = json.load(file)
-            note['loss'] += 1
-            with open("note.json", "w") as file:
-                json.dump(note, file)
+            for item in note:
+                if cid == item['id']:
+                    item['loss'] += 1
+                    with open("note.json", "w") as file:
+                        json.dump(note, file)
             return bot.send_message(cid,
-                             f"Ви не вгадали число.\nВашим числом було {random_number}.", reply_markup=r_sub_menu_numbers())
+                                    f"Ви не вгадали число.\nВашим числом було {random_number}.",
+                                    reply_markup=r_sub_menu_numbers())
         user_number = int(message.text)
         if user_number < random_number:
             bot.send_message(cid, "Число менше від загаданого!\nПовторіть спробу:")
@@ -43,9 +46,11 @@ def random_numbers(message, random_number):
         elif user_number == random_number:
             with open("note.json", "r") as file:
                 note = json.load(file)
-            note['victory'] += 1
-            with open("note.json", "w") as file:
-                json.dump(note, file)
+            for item in note:
+                if cid == item['id']:
+                    item['victory'] += 1
+                    with open("note.json", "w") as file:
+                        json.dump(note, file)
             bot.send_message(cid, f"Вітаю ви вгадали число!\nВоно {random_number}", reply_markup=r_sub_menu_numbers())
     except ValueError:
         bot.send_message(cid, "Повторіть спробу:")
@@ -58,11 +63,6 @@ def send_welcome(msg):
     bot.reply_to(msg, "Привіт! Давай зіграємо гру!", reply_markup=main_reply_menu())
 
 
-@bot.message_handler(commands=['stop'])
-def stopGame (msg):
-    bot.reply_to(msg, "Ви не змогли завершити гру!", reply_markup=main_reply_menu())
-
-
 @bot.message_handler(commands=['help'])
 def send_help(msg):
     bot.reply_to(msg, "Вибери гру і починай!", reply_markup=main_reply_menu())
@@ -71,15 +71,28 @@ def send_help(msg):
 @bot.message_handler(func=lambda message: True)
 def echo_all(msg):
     try:
+        cid = msg.chat.id
         with open("note.json", "r") as file:
             note = json.load(file)
+        for item in note:
+            if not any(item['id'] == cid for item in note):
+                new_user = {
+                    'id': cid,
+                    'victory': 0,
+                    'loss': 0
+                }
+                note.append(new_user)
         with open("note.json", "w") as file:
-            json.dump(file)
-    except Exception as err:
-        count = {
-            'victory': 0,
-            'loss': 0
-        }
+            json.dump(note, file)
+    except Exception:
+        cid = msg.chat.id
+        count = [
+            {
+                'id': cid,
+                'victory': 0,
+                'loss': 0
+            }
+        ]
         with open("note.json", "w") as file:
             json.dump(count, file)
     finally:
@@ -93,7 +106,11 @@ def echo_all(msg):
                              "Правила\nВ цій грі треба вгадати число. І вона поділяється на складності:\nЛегка - від "
                              "1 до 10,\nНормальна - від 1 до 100\nСкладна - від 1 до 1000")
         elif msg.text == "📓Рахунок":
-            bot.send_message(cid, f"Перемоги -- {note['victory']}\nПрограші -- {note['loss']}")
+            with open("note.json", "r") as file:
+                note = json.load(file)
+            for item in note:
+                if item['id'] == cid:
+                    bot.send_message(cid, f"Перемоги -- {item['victory']}\nПрограші -- {item['loss']}")
         elif msg.text == "Назад":
             bot.send_message(cid, "Назад", reply_markup=main_reply_menu())
         elif msg.text == "Легко":
