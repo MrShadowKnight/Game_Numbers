@@ -3,7 +3,7 @@ import telebot
 from telebot import types
 import random
 
-bot = telebot.TeleBot("6558850363:AAGzAm67Fi7q5VuNGZbOIrL-INWVHZlVzqA")
+bot = telebot.TeleBot("TOKEN")
 
 
 def main_reply_menu():
@@ -74,14 +74,13 @@ def echo_all(msg):
         cid = msg.chat.id
         with open("note.json", "r") as file:
             note = json.load(file)
-        for item in note:
-            if not any(item['id'] == cid for item in note):
-                new_user = {
-                    'id': cid,
-                    'victory': 0,
-                    'loss': 0
-                }
-                note.append(new_user)
+        if not any(item['id'] == cid for item in note):
+            new_user = {
+                'id': cid,
+                'victory': 0,
+                'loss': 0
+            }
+            note.append(new_user)
         with open("note.json", "w") as file:
             json.dump(note, file)
     except Exception:
